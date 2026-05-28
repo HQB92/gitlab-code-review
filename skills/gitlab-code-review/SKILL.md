@@ -123,17 +123,36 @@ Parse the MR URL to extract:
 - `namespace/project` → URL-encode as the project ID (replace `/` with `%2F`)
 - `mr_iid` (the merge request number)
 
-### 3a. Get MR metadata
+### 3a. Get the authenticated user
+
+Before fetching the MR, identify who is running this review:
+
+```
+GET https://<gitlab_host>/api/v4/user
+Headers: PRIVATE-TOKEN: <GITLAB_TOKEN>
+```
+
+Save `id` and `username` as `reviewer_id` and `reviewer_username`.
+
+### 3b. Get MR metadata and check authorship
 ```
 GET https://<gitlab_host>/api/v4/projects/<encoded_project>/merge_requests/<iid>
 Headers: PRIVATE-TOKEN: <GITLAB_TOKEN>
 ```
 
 Save from the response:
-- `title`, `description`, `author.name`
+- `title`, `description`, `author.name`, `author.id`
 - `target_branch`
 - `diff_refs.base_sha`, `diff_refs.head_sha`, `diff_refs.start_sha`
 - `web_url`
+
+**Author check**: if `author.id` matches `reviewer_id`, stop here and tell
+the user — in Slack thread if available, otherwise directly in the conversation:
+
+> "🚫 No puedes hacer code review de tu propio MR (`<MR title>`).
+> Pide a un compañero del equipo que lo revise."
+
+Do not proceed further.
 
 **Branch filter**: if `target_branch` is not `develop`, stop here and reply
 in the Slack thread:
@@ -295,27 +314,32 @@ POST .../merge_requests/<iid>/notes
 
 ---
 
-## Step 5b — Auto-approve the MR if clean
+## Step 5b — Ask to approve if clean
 
 After posting all inline comments, evaluate the findings:
 
-- **If there are zero 🔴 Critical and zero 🟡 High findings** → approve the MR automatically:
+- **If there are 🔴 Critical or 🟡 High findings** → do NOT ask to approve.
+  The MR needs corrections first. Skip to Step 6.
 
-```
-POST https://<gitlab_host>/api/v4/projects/<encoded_project>/merge_requests/<iid>/approve
-Headers:
-  PRIVATE-TOKEN: <GITLAB_TOKEN>
-  Content-Type: application/json
-```
+- **If there are zero 🔴 Critical and zero 🟡 High findings** → ask the user:
 
-Note: GitLab does not allow the MR author to approve their own MR. If the API
-returns a 403 with "author cannot approve", mention it in the Slack summary
-without treating it as an error.
+  > "El código está limpio — sin issues críticos ni altos.
+  > ¿Quieres que apruebe este MR?
+  > Responde **sí** para aprobar o **no** para dejarlo pendiente."
 
-- **If there are 🔴 Critical or 🟡 High findings** → do NOT approve. The MR
-  needs corrections first.
+  - **If the user says yes** → call the approve API:
+    ```
+    POST https://<gitlab_host>/api/v4/projects/<encoded_project>/merge_requests/<iid>/approve
+    Headers:
+      PRIVATE-TOKEN: <GITLAB_TOKEN>
+      Content-Type: application/json
+    ```
+    If the API returns 403 ("author cannot approve"), inform the user:
+    > "⚠️ No puedo aprobar tu propio MR — pide a un compañero que lo apruebe."
 
-Store the approval result (`approved: true/false`) for use in the Slack summary.
+  - **If the user says no** → skip the approval, continue to Step 6.
+
+Store the approval result (`approved: true/false/skipped`) for the Slack summary.
 
 ---
 
@@ -344,9 +368,13 @@ Reply to the original Slack message thread using `slack_send_message` with
 • `archivo.ts:42` — [Typing] Missing type on param `userId`
 • `Component.tsx:18` — [i18n] Hardcoded: "Bienvenido"
 
-<Si no hay hallazgos 🔴 ni 🟡>
+<Si no hay hallazgos 🔴 ni 🟡 y el usuario aprobó>
 Sin hallazgos críticos. ¡Buen trabajo! 🎉
-✅ *MR aprobado automáticamente — listo para merge.*
+✅ *MR aprobado — listo para merge.*
+
+<Si no hay hallazgos 🔴 ni 🟡 y el usuario eligió no aprobar>
+Sin hallazgos críticos. ¡Buen trabajo! 🎉
+⏸ *Aprobación pendiente — el reviewer decidió no aprobar por ahora.*
 
 <Si hay hallazgos 🔴 o 🟡>
 ❌ *MR NO aprobado — requiere correcciones antes de mergear.*
