@@ -76,6 +76,20 @@ If no `#CodeReview` message is found, tell the user and show the expected format
 #CodeReview https://gitlab.com/<org>/<proyecto>/-/merge_requests/<número>
 ```
 
+## Step 1c — Check if already reviewed (deduplication)
+
+Before processing any `#CodeReview` message, check if the review was already
+done by reading the thread of that message using `slack_read_thread` with the
+message's `ts` and `channel`.
+
+If the thread already contains a reply that starts with `✅ *Code Review completado*`,
+**skip this message entirely** — it was already processed. Move on to the next
+`#CodeReview` message if there are more, or finish if there are none.
+
+Only proceed to Step 2 if the thread has **no** such reply yet. This prevents
+duplicate reviews when multiple users or scheduled runs encounter the same
+message.
+
 ---
 
 ## Step 2 — Get the GITLAB_TOKEN
