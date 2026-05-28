@@ -192,9 +192,49 @@ Or perform the analysis directly using the criteria below.
   (note: `console.error` in error handlers is usually fine)
 - **Dead code**: commented-out blocks of more than 3 lines, unused imports,
   unreachable code
-- **Code standards**: functions longer than ~50 lines without clear reason,
-  magic numbers without named constants, duplicate logic that should be
-  abstracted
+
+**🔵 Clean Code (comment when found)**
+- **Nombres poco descriptivos**: variables como `data`, `temp`, `x`, `res`,
+  funciones como `handleThing`, `doStuff`. Los nombres deben revelar intención.
+- **Funciones largas**: más de 30 líneas haciendo múltiples cosas. Una función
+  debe hacer una sola cosa.
+- **Magic numbers**: números literales sin nombre (`if (status === 3)` →
+  debería ser `if (status === STATUS.PENDING)`).
+- **Nesting profundo**: más de 3 niveles de if/for anidados. Sugerir early
+  returns o extracción de funciones.
+- **DRY violations**: lógica duplicada que debería estar en una función o
+  utilidad compartida.
+- **Comentarios que explican el qué en lugar del por qué**: el código debe ser
+  autoexplicativo; los comentarios deben explicar decisiones no obvias.
+
+**🟣 SOLID (comment when found)**
+- **S — Single Responsibility**: una clase o función que hace demasiadas cosas
+  no relacionadas. Sugerir separar responsabilidades.
+- **O — Open/Closed**: lógica con múltiples `if/else` o `switch` que crecería
+  con cada nuevo caso. Sugerir polimorfismo o estrategia.
+- **L — Liskov Substitution**: subclases o implementaciones que rompen el
+  contrato del tipo base (lanzan excepciones inesperadas, ignoran parámetros,
+  retornan tipos incompatibles).
+- **I — Interface Segregation**: interfaces o tipos con demasiados métodos
+  donde los implementadores solo usan algunos. Sugerir dividir la interfaz.
+- **D — Dependency Inversion**: clases que instancian sus dependencias
+  directamente (`new ServiceX()`) en lugar de recibirlas por parámetro o
+  inyección. Dificulta el testing y el reemplazo.
+
+**⚫ High Standards (comment when found)**
+- **Error handling**: funciones async sin try/catch, errores silenciados con
+  catch vacío (`catch (e) {}`), errores genéricos sin contexto útil.
+- **Inmutabilidad**: mutaciones directas de objetos/arrays cuando debería
+  usarse spread, `map`, `filter`, o `reduce`.
+- **Separación de concerns**: lógica de negocio mezclada con lógica de UI o
+  de acceso a datos en el mismo componente/función.
+- **Manejo de estados de carga y error**: llamadas a APIs sin manejar el estado
+  de loading ni el caso de error en la UI.
+- **Tests**: si el MR agrega nueva lógica de negocio sin tests correspondientes,
+  mencionarlo como recomendación.
+- **Performance**: re-renders innecesarios en React (objetos/funciones creados
+  inline en props sin `useMemo`/`useCallback`), loops dentro de renders,
+  llamadas a API dentro de loops.
 
 **🟢 Frontend-specific (when files are .tsx, .jsx, .vue, .svelte)**
 - **i18n**: hardcoded user-visible strings not wrapped in `t()`, `i18n.t()`,
@@ -270,6 +310,9 @@ Reply to the original Slack message thread using `slack_send_message` with
 *Hallazgos por categoría:*
 🔴 Critical: X
 🟡 High: X
+🔵 Clean Code: X
+🟣 SOLID: X
+⚫ Standards: X
 🟢 Frontend/i18n: X
 
 <Si hay hallazgos críticos>
