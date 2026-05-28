@@ -295,6 +295,30 @@ POST .../merge_requests/<iid>/notes
 
 ---
 
+## Step 5b — Auto-approve the MR if clean
+
+After posting all inline comments, evaluate the findings:
+
+- **If there are zero 🔴 Critical and zero 🟡 High findings** → approve the MR automatically:
+
+```
+POST https://<gitlab_host>/api/v4/projects/<encoded_project>/merge_requests/<iid>/approve
+Headers:
+  PRIVATE-TOKEN: <GITLAB_TOKEN>
+  Content-Type: application/json
+```
+
+Note: GitLab does not allow the MR author to approve their own MR. If the API
+returns a 403 with "author cannot approve", mention it in the Slack summary
+without treating it as an error.
+
+- **If there are 🔴 Critical or 🟡 High findings** → do NOT approve. The MR
+  needs corrections first.
+
+Store the approval result (`approved: true/false`) for use in the Slack summary.
+
+---
+
 ## Step 6 — Post summary in Slack
 
 Reply to the original Slack message thread using `slack_send_message` with
@@ -320,8 +344,12 @@ Reply to the original Slack message thread using `slack_send_message` with
 • `archivo.ts:42` — [Typing] Missing type on param `userId`
 • `Component.tsx:18` — [i18n] Hardcoded: "Bienvenido"
 
-<Si no hay hallazgos>
+<Si no hay hallazgos 🔴 ni 🟡>
 Sin hallazgos críticos. ¡Buen trabajo! 🎉
+✅ *MR aprobado automáticamente — listo para merge.*
+
+<Si hay hallazgos 🔴 o 🟡>
+❌ *MR NO aprobado — requiere correcciones antes de mergear.*
 
 _Los comentarios están inline en el MR de GitLab._
 ```
