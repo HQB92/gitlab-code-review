@@ -131,8 +131,17 @@ Headers: PRIVATE-TOKEN: <GITLAB_TOKEN>
 
 Save from the response:
 - `title`, `description`, `author.name`
+- `target_branch`
 - `diff_refs.base_sha`, `diff_refs.head_sha`, `diff_refs.start_sha`
 - `web_url`
+
+**Branch filter**: if `target_branch` is not `develop`, stop here and reply
+in the Slack thread:
+
+> "⚠️ Este MR apunta a `<target_branch>`, no a `develop`. Solo proceso MRs
+> que van hacia `develop`."
+
+Do not proceed further for this MR.
 
 ### 3b. Get the file changes (diff)
 ```
