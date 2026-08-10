@@ -1,0 +1,15 @@
+{
+  "name": "gitlab-code-review",
+  "owner": {
+    "name": "HQB92",
+    "url": "https://github.com/HQB92"
+  },
+  "plugins": [
+    {
+      "name": "gitlab-code-review",
+      "source": "./",
+      "description": "Automated GitLab MR code review triggered from Slack. Posts inline comments on GitLab and a summary reply in the Slack thread. Checks for TypeScript typing issues, console.log, bugs, code standards, and i18n in frontend files.",
+      "version": "1.0.0"
+    }
+  ]
+}
